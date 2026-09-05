@@ -3,8 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 // Database handler
@@ -19,12 +20,32 @@ func initDatabaseManager() *DatabaseManager {
 
 // Returns a connection object with the db
 func (dm *DatabaseManager) connectDb() *sql.DB {
-	db, err := sql.Open("mysql", "vroom:vroom@tcp(localhost:3306)/")
+	password, ok := os.LookupEnv("MYSQL_PASSWORD")
+	if !ok {
+		panic("MYSQL_PASSWORD must be set")
+	}
+
+	config := mysql.Config{
+		User:                 getenv("MYSQL_USER", "vroom"),
+		Passwd:               password,
+		Net:                  "tcp",
+		Addr:                 getenv("MYSQL_ADDRESS", "127.0.0.1:3306"),
+		DBName:               getenv("MYSQL_DATABASE", "vroom"),
+		AllowNativePasswords: true,
+		ParseTime:            true,
+	}
+	db, err := sql.Open("mysql", config.FormatDSN())
 	if err != nil {
 		panic(err.Error())
 	}
-	db.Exec("USE vroom;")
 	return db
+}
+
+func getenv(key string, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
 }
 
 // Creates necessary db schema

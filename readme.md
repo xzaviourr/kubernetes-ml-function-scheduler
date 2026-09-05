@@ -49,15 +49,27 @@ requests, and dispatch ready work.
 - MySQL on `localhost:3306`
 - GPU-labelled nodes and compatible container images for GPU variants
 
-The current prototype expects a MySQL database named `vroom` and the local
-development credentials `vroom:vroom`. Use an isolated development database;
-the credentials are currently compiled into `database.go`.
+The scheduler reads its database connection from environment variables. Copy
+the example as a reference, then export the values in your shell or load them
+with your preferred environment manager (the Go process does not load `.env`
+files itself):
 
-```sql
-CREATE DATABASE vroom;
-CREATE USER 'vroom'@'%' IDENTIFIED BY 'vroom';
-GRANT ALL PRIVILEGES ON vroom.* TO 'vroom'@'%';
+```bash
+cp .env.example .env
+export MYSQL_ADDRESS=127.0.0.1:3306
+export MYSQL_DATABASE=vroom
+export MYSQL_USER=vroom
+export MYSQL_PASSWORD='replace-with-a-local-password'
 ```
+
+`MYSQL_ADDRESS`, `MYSQL_DATABASE`, and `MYSQL_USER` have the non-sensitive
+defaults shown above. `MYSQL_PASSWORD` has no default and must be set, including
+to an explicitly empty value if that is how an isolated local database is
+configured. `.env` is ignored by Git.
+
+Create the database and a least-privileged application user with your own
+administrator account. Grant that user schema access only to the selected
+database; do not reuse administrator or production credentials.
 
 ## Build and run
 
@@ -129,7 +141,8 @@ the referenced model images.
 
 ## Limitations
 
-- Configuration and development database credentials are hard-coded.
+- Database settings are environment-driven, but other cluster assumptions
+  remain compiled into the prototype.
 - Shared scheduler maps are accessed by concurrent goroutines without an
   explicit synchronization layer.
 - API authentication, authorization, TLS, retries, and admission controls are
